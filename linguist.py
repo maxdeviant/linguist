@@ -1,25 +1,12 @@
 import os
 import re
 import json
+import argparse
 from os.path import join, isdir
 from sys import argv, exit
 from goslate import Goslate
 
 gs = Goslate()
-
-if len(argv) < 3:
-    exit('Not enough arguments')
-
-source_language = argv[1].lower()
-target_language = argv[2].lower()
-
-supported = [x.lower() for x in gs.get_languages().keys()]
-
-if source_language not in supported:
-    exit('{0} not supported.'.format(source_language))
-
-if target_language not in supported:
-    exit('{0} not supported.'.format(target_language))
 
 def wrap(string):
     pattern_start = re.compile('{{')
@@ -40,6 +27,9 @@ def unwrap(string):
 
     return string
 
+def translate(string, source, target):
+    return gs.translate(string, target, source).encode('utf-8')
+
 def translate_all(strings):
     for string in strings:
         if type(strings[string]) == type(dict()):
@@ -58,21 +48,45 @@ def translate_all(strings):
 
             strings[string] = translated_string
 
-def translate(string, source, target):
-    return gs.translate(string, target, source).encode('utf-8')
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
 
-for root, dirs, files in os.walk(join('i18n', source_language)):
-    for filename in files:
-        filepath = join(root, filename)
-        outpath = join(join('i18n', target_language), filename)
+    parser.add_argument('-i', '--input', help='input help')
+    parser.add_argument('-o', '--output', help='output help')
+    parser.add_argument('source_language', type=str)
+    parser.add_argument('target_language', type=str)
 
-        if not isdir(join('i18n', target_language)):
-            os.mkdir(join('i18n', target_language))
+    args = parser.parse_args();
 
-        with open(filepath, 'r') as f:
-            strings = json.load(f)
+    input_dir = args.input if args.input is not None else 'i18n'
+    output_dir = args.output if args.output is not None else 'i18n'
 
-            translate_all(strings)
+    source_language = args.source_language.lower()
+    target_language = args.target_language.lower()
 
-        with open(outpath, 'w+') as f:
-            json.dump(strings, f, indent=4, separators=(',', ': '), ensure_ascii=False)
+    supported = [x.lower() for x in gs.get_languages().keys()]
+
+    if source_language not in supported:
+        exit('{0} not supported.'.format(source_language))
+
+    if target_language not in supported:
+        exit('{0} not supported.'.format(target_language))
+
+    source_dir = join(input_dir, source_language)
+    target_dir = join(output_dir, target_language)
+
+    for root, dirs, files in os.walk(source_dir):
+        for filename in files:
+            filepath = join(root, filename)
+            outpath = join(target_dir, filename)
+
+            if not isdir(target_dir):
+                os.mkdir(target_dir)
+
+            with open(filepath, 'r') as f:
+                strings = json.load(f, 'utf-8')
+
+                translate_all(strings)
+
+            with open(outpath, 'w+') as f:
+                json.dump(strings, f, indent=4, separators=(',', ': '), ensure_ascii=False)
