@@ -10,8 +10,16 @@ gs = Goslate()
 if len(argv) < 3:
     exit('Not enough arguments')
 
-source_language = argv[1]
-target_language = argv[2]
+source_language = argv[1].lower()
+target_language = argv[2].lower()
+
+supported = [x.lower() for x in gs.get_languages().keys()]
+
+if source_language not in supported:
+    exit('{0} not supported.'.format(source_language))
+
+if target_language not in supported:
+    exit('{0} not supported.'.format(target_language))
 
 def wrap(string):
     pattern_start = re.compile('{{')
