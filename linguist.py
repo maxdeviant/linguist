@@ -75,4 +75,4 @@ for root, dirs, files in os.walk(join('i18n', source_language)):
             translate_all(strings)
 
         with open(outpath, 'w+') as f:
-            json.dump(strings, f, indent=4, ensure_ascii=False)
+            json.dump(strings, f, indent=4, separators=(',', ': '), ensure_ascii=False)
