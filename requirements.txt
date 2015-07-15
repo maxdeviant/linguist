@@ -1,0 +1,2 @@
+futures==3.0.3
+goslate==1.4.0
