@@ -4,9 +4,13 @@ import json
 import argparse
 from os.path import join, isdir
 from sys import argv, exit
+from urllib2 import HTTPError
 from goslate import Goslate
+from settings import USE_SSL, GOOGLE_DOMAINS
 
-gs = Goslate()
+service_urls = [('https://' if USE_SSL else 'http://') + 'translate' + domain for domain in GOOGLE_DOMAINS]
+
+gs = Goslate(service_urls=service_urls)
 
 def wrap(string):
     pattern_start = re.compile('{{')
@@ -28,7 +32,13 @@ def unwrap(string):
     return string
 
 def translate(string, source, target):
-    return gs.translate(string, target, source).encode('utf-8')
+    try:
+        return gs.translate(string, target, source).encode('utf-8')
+    except HTTPError, err:
+        if err.code == 404:
+            exit('Bad Google Translate Domain: {0}'.format(err.url))
+
+        raise err
 
 def translate_all(strings):
     for string in strings:
